@@ -7,6 +7,17 @@ export default defineConfig({
   build: {
     sourcemap: 'hidden',
   },
+  server: {
+    // Avoid watching large non-source dirs (prevents inotify ENOSPC in sandboxed envs)
+    watch: {
+      ignored: [
+        '**/.pnpm-store/**',
+        '**/.git/**',
+        '**/node_modules/**',
+      ],
+    },
+    host: true,
+  },
   plugins: [
     react({
       babel: {
