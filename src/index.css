@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --graphite: #0e0f12;
+  --panel: #14161b;
+  --regolith: #3a3a40;
+  --cream: #e8e2d4;
+  --amber: #ffb454;
+  --cyan: #56d4e0;
+  --magenta: #e056a8;
+  --mint: #7be2a8;
+  --grid-line: rgba(255, 180, 84, 0.08);
+
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  line-height: 1.45;
+  font-weight: 400;
+  color: var(--cream);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: var(--graphite);
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--graphite);
+}
+
+/* === Scrollbars === */
+.thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 180, 84, 0.25);
+  border-radius: 0;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 180, 84, 0.5); }
+
+/* === Reusable UI primitives === */
+.hud-panel {
+  background: linear-gradient(180deg, rgba(20,22,27,0.92) 0%, rgba(14,15,18,0.92) 100%);
+  border: 1px solid rgba(255, 180, 84, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.hud-panel-cyan {
+  background: linear-gradient(180deg, rgba(20,22,27,0.92) 0%, rgba(14,15,18,0.92) 100%);
+  border: 1px solid rgba(86, 212, 224, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.btn-rect {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream);
+  background: transparent;
+  border: 1px solid rgba(255, 180, 84, 0.4);
+  padding: 6px 10px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-rect:hover {
+  background: var(--amber);
+  color: var(--graphite);
+  border-color: var(--amber);
+  box-shadow: 0 0 14px rgba(255, 180, 84, 0.5);
+}
+.btn-rect:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.btn-rect:disabled:hover {
+  background: transparent;
+  color: var(--cream);
+  border-color: rgba(255, 180, 84, 0.4);
+  box-shadow: none;
+}
+
+.btn-rect-cyan {
+  border-color: rgba(86, 212, 224, 0.45);
+}
+.btn-rect-cyan:hover {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  box-shadow: 0 0 14px rgba(86, 212, 224, 0.5);
+}
+
+.label-tag {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232, 226, 212, 0.5);
+}
+
+.mono-num {
+  font-family: "IBM Plex Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* === CRT scanline overlay === */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.08) 3px,
+    rgba(0,0,0,0) 4px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+  z-index: 50;
+}
+
+/* vignette */
+.vignette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%);
+  z-index: 40;
+}
+
+/* corner brackets util */
+.corner-brackets {
+  position: relative;
+}
+.corner-brackets::before,
+.corner-brackets::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--amber);
+  border-style: solid;
+  border-width: 0;
+}
+.corner-brackets::before {
+  top: -1px; left: -1px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.corner-brackets::after {
+  bottom: -1px; right: -1px;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+/* small pulse */
+@keyframes ring-pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.ring-pulse {
+  animation: ring-pulse 1.4s ease-out infinite;
+  transform-origin: center;
+}
+
+/* placement ghost flicker */
+@keyframes ghost-flicker {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.35; }
+}
+.ghost-flicker {
+  animation: ghost-flicker 1.2s ease-in-out infinite;
+}
+
+/* prevent text selection during drag */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* prevent default touch gestures on canvas */
+.touch-none {
+  touch-action: none;
+}
