@@ -270,6 +270,33 @@ export function GameCanvas() {
     return { x: sx, y: sy, def, ok: preview.ok, reason: preview.reason };
   }, [placement, cursorWorld, canPlacePreview]);
 
+  // === Ghost corridor neighbors (for visual connection preview) ===
+  const ghostNeighbors = useMemo(() => {
+    if (!ghostBuilding || ghostBuilding.def.id !== "corridor") return undefined;
+    const check = (x: number, y: number) => {
+      for (const b of buildings) {
+        const def = MODULE_CATALOG[b.typeId];
+        if (!def) continue;
+        if (
+          x >= b.x - def.size.w / 2 &&
+          x <= b.x + def.size.w / 2 &&
+          y >= b.y - def.size.h / 2 &&
+          y <= b.y + def.size.h / 2
+        ) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const d = GRID_SIZE;
+    return {
+      n: check(ghostBuilding.x, ghostBuilding.y - d),
+      s: check(ghostBuilding.x, ghostBuilding.y + d),
+      e: check(ghostBuilding.x + d, ghostBuilding.y),
+      w: check(ghostBuilding.x - d, ghostBuilding.y),
+    };
+  }, [ghostBuilding, buildings]);
+
   return (
     <div
       ref={containerRef}
@@ -326,10 +353,11 @@ export function GameCanvas() {
                 r={r}
                 fill={ghostBuilding.ok ? "url(#placement-ok)" : "url(#placement-bad)"}
               />
-              <g transform={`scale(${camera.zoom / 50})`}>
+              <g transform={`scale(${(ghostBuilding.def.size.w / 50) * camera.zoom})`}>
                 {renderBuildingGlyph(ghostBuilding.def.id, {
                   color: ghostBuilding.ok ? moduleColor(ghostBuilding.def.id) : "#e056a8",
                   fillOpacity: 0.22,
+                  neighbors: ghostNeighbors,
                 })}
               </g>
               <rect

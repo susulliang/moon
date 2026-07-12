@@ -57,19 +57,19 @@ export const RESOURCE_ORDER: ResourceId[] = [
   "power", "oxygen", "water", "food", "ore", "metals", "fuel", "components", "research", "helium3", "credits",
 ];
 
-// Initial stockpile given on new game
+// Initial stockpile given on new game — generous to let players build freely
 export const START_RESOURCES: Record<string, number> = {
-  power: 200,
-  oxygen: 80,
-  water: 80,
-  food: 60,
-  ore: 0,
-  metals: 30,
-  fuel: 20,
-  components: 25,
+  power: 2000,
+  oxygen: 800,
+  water: 800,
+  food: 600,
+  ore: 500,
+  metals: 500,
+  fuel: 200,
+  components: 300,
   research: 0,
   helium3: 0,
-  credits: 5000,
+  credits: 50000,
 };
 
 export const START_POPULATION = 24;

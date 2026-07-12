@@ -143,7 +143,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   resources: { ...START_RESOURCES },
   rates: {},
-  storageCapacity: { ore: 200, metals: 200, fuel: 100, components: 100, helium3: 50, power: 200 },
+  storageCapacity: { ore: 2000, metals: 2000, fuel: 1000, components: 1000, helium3: 500, power: 2000 },
 
   population: START_POPULATION,
   housingCapacity: 8,
@@ -165,7 +165,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   initNew: () => {
     const seed = makeSeedFromTime();
-    const terrain = generateTerrain({ seed, size: 320, worldExtent: WORLD_EXTENT });
+    const terrain = generateTerrain({ seed, size: 480, worldExtent: WORLD_EXTENT, craterCount: 500 });
     const buildings = makeInitialBuildings(seed);
     set({
       seed,
@@ -176,7 +176,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       researchAccrued: 0,
       resources: { ...START_RESOURCES },
       rates: {},
-      storageCapacity: { ore: 200, metals: 200, fuel: 100, components: 100, helium3: 50, power: 200 },
+      storageCapacity: { ore: 2000, metals: 2000, fuel: 1000, components: 1000, helium3: 500, power: 2000 },
       population: START_POPULATION,
       housingCapacity: 8,
       buildings,
@@ -202,7 +202,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   initFromSave: (data: any) => {
     const seed = data.seed ?? makeSeedFromTime();
-    const terrain = generateTerrain({ seed, size: 320, worldExtent: WORLD_EXTENT });
+    const terrain = generateTerrain({ seed, size: 480, worldExtent: WORLD_EXTENT, craterCount: 500 });
     set({
       seed,
       terrain,

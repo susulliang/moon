@@ -5,7 +5,7 @@
 import { memo, useMemo } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { MODULE_CATALOG, moduleColor } from "@/buildings/catalog";
-import { renderBuildingGlyph } from "@/buildings/glyphs";
+import { renderBuildingGlyph, type CorridorNeighbors } from "@/buildings/glyphs";
 import type { Camera } from "@/utils/geometry";
 import type { BuildingInstance } from "@/sim/types";
 
@@ -14,10 +14,50 @@ interface Props {
   viewport: { w: number; h: number };
 }
 
+// Compute which sides of a corridor have neighboring buildings
+function computeCorridorNeighbors(
+  corridor: BuildingInstance,
+  buildings: BuildingInstance[],
+): CorridorNeighbors {
+  const check = (x: number, y: number) => {
+    for (const b of buildings) {
+      if (b.id === corridor.id) continue;
+      const def = MODULE_CATALOG[b.typeId];
+      if (!def) continue;
+      if (
+        x >= b.x - def.size.w / 2 &&
+        x <= b.x + def.size.w / 2 &&
+        y >= b.y - def.size.h / 2 &&
+        y <= b.y + def.size.h / 2
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const d = 40; // GRID_SIZE
+  return {
+    n: check(corridor.x, corridor.y - d),
+    s: check(corridor.x, corridor.y + d),
+    e: check(corridor.x + d, corridor.y),
+    w: check(corridor.x - d, corridor.y),
+  };
+}
+
 function BuildingLayerImpl({ camera, viewport }: Props) {
   const buildings = useGameStore((s) => s.buildings);
   const selectedId = useGameStore((s) => s.selectedBuildingId);
   const simTime = useGameStore((s) => s.simTime);
+
+  // Compute corridor neighbors map
+  const corridorNeighbors = useMemo(() => {
+    const map = new Map<string, CorridorNeighbors>();
+    for (const b of buildings) {
+      if (b.typeId !== "corridor") continue;
+      map.set(b.id, computeCorridorNeighbors(b, buildings));
+    }
+    return map;
+  }, [buildings]);
 
   // Cull buildings outside viewport (with margin)
   const margin = 200;
@@ -45,6 +85,7 @@ function BuildingLayerImpl({ camera, viewport }: Props) {
           viewport={viewport}
           selected={b.id === selectedId}
           simTime={simTime}
+          neighbors={corridorNeighbors.get(b.id)}
         />
       ))}
     </g>
@@ -59,9 +100,10 @@ interface SpriteProps {
   viewport: { w: number; h: number };
   selected: boolean;
   simTime: number;
+  neighbors?: CorridorNeighbors;
 }
 
-function BuildingSprite({ building, camera, viewport, selected, simTime }: SpriteProps) {
+function BuildingSprite({ building, camera, viewport, selected, simTime, neighbors }: SpriteProps) {
   const def = MODULE_CATALOG[building.typeId];
   if (!def) return null;
   const color = moduleColor(building.typeId);
@@ -127,6 +169,7 @@ function BuildingSprite({ building, camera, viewport, selected, simTime }: Sprit
         {renderBuildingGlyph(building.typeId, {
           color,
           fillOpacity: selected ? 0.35 : 0.15,
+          neighbors,
         })}
       </g>
 

@@ -10,7 +10,7 @@ import type { TerrainData } from "@/sim/types";
  * remote-sensing aesthetic.
  * Output: rgba bytes in an Uint8ClampedArray of length size*size*4.
  */
-export function renderTerrainImage(terrain: TerrainData, pixelSize = 3): Uint8ClampedArray {
+export function renderTerrainImage(terrain: TerrainData, pixelSize = 2): Uint8ClampedArray {
   const { size, elevations, sunAzimuth, sunElevation } = terrain;
   const out = new Uint8ClampedArray(size * size * 4);
 
