@@ -1,0 +1,21 @@
+# Vercel ignore — files/dirs not needed for deployment
+.pnpm-store/
+.trae/
+.git/
+.github/
+.husky/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+node_modules/
+src/**/*.test.ts
+src/**/*.test.tsx
+src/**/*.spec.ts
+src/**/*.spec.tsx
+.eslintrc*
+eslint.config.js
+tsconfig.json
+tsconfig.app.json
+tsconfig.node.json
+.prettierrc*
+.prettierignore
