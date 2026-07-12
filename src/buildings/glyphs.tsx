@@ -327,6 +327,18 @@ export function renderBuildingGlyph(typeId: BuildingTypeId, props: GlyphProps): 
         </g>
       );
     }
+    case "corridor": {
+      // pressurized walkway tube with ribs
+      return (
+        <g {...COMMON_PROPS} stroke={stroke} fill={fill} fillOpacity={fillOpacity}>
+          <rect x="-18" y="-10" width="36" height="20" rx="6" />
+          <line x1="-10" y1="-10" x2="-10" y2="10" />
+          <line x1="0" y1="-10" x2="0" y2="10" />
+          <line x1="10" y1="-10" x2="10" y2="10" />
+          <circle cx="0" cy="0" r="1.5" fill={stroke} fillOpacity={0.5} />
+        </g>
+      );
+    }
 
     // ==================== SIGNATURE ====================
     case "rail_launch": {

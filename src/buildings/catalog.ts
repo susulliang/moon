@@ -300,6 +300,17 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     popRequired: 2,
     maxLevel: 3,
   },
+  corridor: {
+    id: "corridor",
+    category: "logistics",
+    name: "Corridor",
+    blurb: "Pressurized walkway connecting modules for crew movement.",
+    cost: { metals: 4, credits: 80 },
+    buildTime: 1,
+    size: { w: 40, h: 40 },
+    popRequired: 0,
+    maxLevel: 1,
+  },
 
   // ===================== SIGNATURE =====================
   rail_launch: {
@@ -336,15 +347,37 @@ export function getModulesByCategory(cat: BuildingCategoryId): ModuleDef[] {
   return Object.values(MODULE_CATALOG).filter((m) => m.category === cat);
 }
 
-export function moduleColor(category: BuildingCategoryId): string {
+/** Category-level color — used for palette tabs and labels. Mostly greyscale. */
+export function categoryColor(category: BuildingCategoryId): string {
   switch (category) {
-    case "power":     return "#ffb454";
-    case "habitat":   return "#7be2a8";
-    case "life":      return "#56d4e0";
-    case "isru":      return "#b8a98a";
-    case "mfg":       return "#c8c8d0";
-    case "research":  return "#a8e0ff";
-    case "logistics": return "#ffd86b";
-    case "signature": return "#e056a8";
+    case "power":     return "#9aa4b0"; // steel
+    case "habitat":   return "#b0a89c"; // warm grey
+    case "life":      return "#8a94a0"; // cool grey
+    case "isru":      return "#a89a82"; // tan grey
+    case "mfg":       return "#8a9098"; // industrial grey
+    case "research":  return "#889aaa"; // blue-grey
+    case "logistics": return "#a0988a"; // warm grey
+    case "signature": return "#8a94a8"; // steel
+  }
+}
+
+/**
+ * Per-building color. Mostly greyscale with specific accents:
+ *  - oxygen_plant → blue
+ *  - greenhouse   → green (plants/food)
+ *  - rail_launch   → steel
+ *  - corridor      → light steel
+ *  - everything else → category greyscale
+ */
+export function moduleColor(typeId: BuildingTypeId): string {
+  switch (typeId) {
+    case "oxygen_plant":  return "#56d4e0"; // blue
+    case "greenhouse":    return "#7be2a8"; // green
+    case "rail_launch":   return "#8a94a8"; // steel
+    case "corridor":      return "#9aa4b0"; // light steel
+    default: {
+      const def = MODULE_CATALOG[typeId];
+      return def ? categoryColor(def.category) : "#9aa4b0";
+    }
   }
 }

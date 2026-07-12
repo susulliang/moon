@@ -100,16 +100,26 @@ const DEFAULT_CAMERA: Camera = { x: 0, y: 0, zoom: 0.7 };
 function makeInitialBuildings(seed: number): BuildingInstance[] {
   // Pre-seed: 1 nuclear reactor, 1 crew habitat, 1 greenhouse, 1 oxygen plant, 1 water plant,
   // 1 regolith harvester, 1 fab bay, 1 storage depot, 1 rail launch system
+  // All positions are multiples of GRID_SIZE (40) for grid alignment.
   const layout: { typeId: BuildingTypeId; x: number; y: number; rotation: number }[] = [
-    { typeId: "nuclear_reactor",     x: -120, y: -60,  rotation: 0 },
-    { typeId: "crew_habitat",         x: 0,    y: -60,  rotation: 0 },
-    { typeId: "greenhouse",           x: 120,  y: -60,  rotation: 0 },
-    { typeId: "oxygen_plant",         x: -60,  y: 40,   rotation: 0 },
-    { typeId: "water_plant",          x: 60,   y: 40,   rotation: 0 },
-    { typeId: "regolith_harvester",   x: -180, y: 80,   rotation: 0 },
-    { typeId: "fab_bay",              x: 180,  y: 80,   rotation: 0 },
-    { typeId: "storage_depot",        x: 0,    y: 100,  rotation: 0 },
-    { typeId: "rail_launch",          x: 0,    y: 220,  rotation: 0 },
+    { typeId: "nuclear_reactor",     x: -120, y: -80,  rotation: 0 },
+    { typeId: "crew_habitat",         x: 0,    y: -80,  rotation: 0 },
+    { typeId: "greenhouse",           x: 120,  y: -80,  rotation: 0 },
+    { typeId: "oxygen_plant",         x: -80,  y: 40,   rotation: 0 },
+    { typeId: "water_plant",          x: 80,   y: 40,   rotation: 0 },
+    { typeId: "regolith_harvester",   x: -200, y: 80,   rotation: 0 },
+    { typeId: "fab_bay",              x: 200,  y: 80,   rotation: 0 },
+    { typeId: "storage_depot",        x: 0,    y: 120,  rotation: 0 },
+    { typeId: "rail_launch",          x: 0,    y: 240,  rotation: 0 },
+    // Corridors connecting key modules
+    { typeId: "corridor",             x: -80,  y: -80,  rotation: 0 },
+    { typeId: "corridor",             x: -40,  y: -80,  rotation: 0 },
+    { typeId: "corridor",             x: 40,   y: -80,  rotation: 0 },
+    { typeId: "corridor",             x: 80,   y: -80,  rotation: 0 },
+    { typeId: "corridor",             x: 0,    y: -40,  rotation: 0 },
+    { typeId: "corridor",             x: 0,    y: 0,    rotation: 0 },
+    { typeId: "corridor",             x: 0,    y: 40,   rotation: 0 },
+    { typeId: "corridor",             x: 0,    y: 80,   rotation: 0 },
   ];
   return layout.map((l) => ({
     id: rid(),

@@ -11,6 +11,9 @@ export interface Camera {
 export const MIN_ZOOM = 0.18;
 export const MAX_ZOOM = 6;
 
+/** Grid cell size in world units. Buildings + corridors snap to this grid. */
+export const GRID_SIZE = 40;
+
 export function clampZoom(z: number): number {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 }

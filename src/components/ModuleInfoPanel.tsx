@@ -32,7 +32,7 @@ export function ModuleInfoPanel() {
   const b = buildings.find((x) => x.id === selectedId);
   if (!b) return null;
   const def = MODULE_CATALOG[b.typeId];
-  const color = moduleColor(def.category);
+  const color = moduleColor(b.typeId);
 
   const isRail = b.typeId === "rail_launch";
   const activeLaunches = launchQueue.length;

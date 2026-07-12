@@ -9,6 +9,7 @@ import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   getModulesByCategory,
+  categoryColor,
   moduleColor,
 } from "@/buildings/catalog";
 import { renderBuildingGlyph } from "@/buildings/glyphs";
@@ -52,7 +53,7 @@ export function BuildPalette() {
         <div className="flex items-stretch border-b border-amber/20">
           {CATEGORY_ORDER.map((cat) => {
             const active = cat === category;
-            const color = moduleColor(cat);
+            const color = categoryColor(cat);
             return (
               <button
                 key={cat}
@@ -95,7 +96,7 @@ function ModuleList({ category }: { category: BuildingCategoryId }) {
   const resources = useGameStore((s) => s.resources);
   const startPlacement = useGameStore((s) => s.startPlacement);
   const placement = useGameStore((s) => s.placement);
-  const color = moduleColor(category);
+  const catColor = categoryColor(category);
 
   return (
     <div className="flex gap-2 p-2 overflow-x-auto thin-scroll">
@@ -121,7 +122,7 @@ function ModuleList({ category }: { category: BuildingCategoryId }) {
             {/* glyph preview */}
             <div className="h-[44px] flex items-center justify-center">
               <svg viewBox="-50 -50 100 100" className="w-11 h-11">
-                {renderBuildingGlyph(m.id, { color, fillOpacity: 0.2 })}
+                {renderBuildingGlyph(m.id, { color: moduleColor(m.id), fillOpacity: 0.2 })}
               </svg>
             </div>
 
@@ -163,7 +164,7 @@ function ModuleList({ category }: { category: BuildingCategoryId }) {
             {/* corner index */}
             <span
               className="absolute top-1 left-1 font-display text-[8px] opacity-50"
-              style={{ color }}
+              style={{ color: catColor }}
             >
               {m.id.slice(0, 3).toUpperCase()}
             </span>

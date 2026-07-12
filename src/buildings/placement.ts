@@ -39,14 +39,15 @@ export function canPlaceAt(
   // crater floor avoidance: don't place in deep craters
   const elev = sampleElevation(terrain, worldX, worldY);
   if (elev < 0.12) return { ok: false, reason: "Crater floor unstable" };
-  // overlap with existing
+  // overlap with existing — corridors use 0 padding so they can sit flush against buildings
   const newRect: Rect = { x: worldX - module.size.w / 2, y: worldY - module.size.h / 2, w: module.size.w, h: module.size.h };
+  const overlapPad = module.id === "corridor" ? 0 : 8;
   for (const b of buildings) {
-    const bs = module.size; // fallback
-    void bs;
     const m = lookupSize(b.typeId);
     const r: Rect = { x: b.x - m.w / 2, y: b.y - m.h / 2, w: m.w, h: m.h };
-    if (rectsOverlap(newRect, r, 8)) return { ok: false, reason: "Overlap" };
+    // corridors can overlap with other corridors (they chain together)
+    if (module.id === "corridor" && b.typeId === "corridor") continue;
+    if (rectsOverlap(newRect, r, overlapPad)) return { ok: false, reason: "Overlap" };
   }
   return { ok: true };
 }

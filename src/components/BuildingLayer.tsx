@@ -64,7 +64,7 @@ interface SpriteProps {
 function BuildingSprite({ building, camera, viewport, selected, simTime }: SpriteProps) {
   const def = MODULE_CATALOG[building.typeId];
   if (!def) return null;
-  const color = moduleColor(def.category);
+  const color = moduleColor(building.typeId);
   const sx = (building.x - camera.x) * camera.zoom + viewport.w / 2;
   const sy = (building.y - camera.y) * camera.zoom + viewport.h / 2;
   // Glyph is drawn in a 100x100 viewBox (coords -50..50). We want the visible footprint

@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useGameStore, WORLD_EXTENT } from "@/store/gameStore";
-import { clampZoom, screenToWorld, snap, type Camera } from "@/utils/geometry";
+import { clampZoom, screenToWorld, snap, GRID_SIZE, type Camera } from "@/utils/geometry";
 import { renderTerrainImage, paintTerrainCanvas } from "@/terrain/hillshade";
 import { MODULE_CATALOG, moduleColor } from "@/buildings/catalog";
 import { renderBuildingGlyph } from "@/buildings/glyphs";
@@ -61,8 +61,8 @@ export function GameCanvas() {
     terrainCanvasRef.current.height = vh;
 
     ctx.clearRect(0, 0, vw, vh);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingQuality = "low";
 
     // Draw terrain slice: map world rect to terrain canvas rect.
     // World extends from -WORLD_EXTENT/2 .. +WORLD_EXTENT/2 → 0..terrain.size
@@ -102,11 +102,13 @@ export function GameCanvas() {
     ctx.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
     ctx.setLineDash([]);
 
-    // Subtle grid overlay (only when zoomed in enough)
-    if (camera.zoom > 0.4) {
-      ctx.strokeStyle = "rgba(255, 180, 84, 0.06)";
+    // Grid overlay — snapped to GRID_SIZE, brighter when placing
+    if (camera.zoom > 0.3) {
+      const gridStep = GRID_SIZE;
+      ctx.strokeStyle = placement
+        ? "rgba(255, 180, 84, 0.18)"
+        : "rgba(255, 180, 84, 0.06)";
       ctx.lineWidth = 0.5;
-      const gridStep = 100; // world units
       const startX = Math.ceil(worldLeft / gridStep) * gridStep;
       const startY = Math.ceil(worldTop / gridStep) * gridStep;
       for (let x = startX; x <= worldRight; x += gridStep) {
@@ -124,7 +126,7 @@ export function GameCanvas() {
         ctx.stroke();
       }
     }
-  }, [terrain, terrainCanvas, camera, viewport]);
+  }, [terrain, terrainCanvas, camera, viewport, placement]);
 
   // === Pan / Zoom interactions ===
   const dragState = useRef<{
@@ -187,9 +189,8 @@ export function GameCanvas() {
     const world = screenToWorld(localX, localY, camera, viewport.w, viewport.h);
 
     if (placement) {
-      const def = MODULE_CATALOG[placement.typeId];
-      const sx = snap(world.x, def.size.w / 2);
-      const sy = snap(world.y, def.size.h / 2);
+      const sx = snap(world.x, GRID_SIZE);
+      const sy = snap(world.y, GRID_SIZE);
       const res = commitPlacement(sx, sy);
       if (!res.ok && res.reason) {
         // visual feedback via selectedBuilding null + brief flash handled elsewhere
@@ -263,8 +264,8 @@ export function GameCanvas() {
   const ghostBuilding = useMemo(() => {
     if (!placement || !cursorWorld) return null;
     const def = MODULE_CATALOG[placement.typeId];
-    const sx = snap(cursorWorld.x, def.size.w / 2);
-    const sy = snap(cursorWorld.y, def.size.h / 2);
+    const sx = snap(cursorWorld.x, GRID_SIZE);
+    const sy = snap(cursorWorld.y, GRID_SIZE);
     const preview = canPlacePreview(sx, sy);
     return { x: sx, y: sy, def, ok: preview.ok, reason: preview.reason };
   }, [placement, cursorWorld, canPlacePreview]);
@@ -327,7 +328,7 @@ export function GameCanvas() {
               />
               <g transform={`scale(${camera.zoom / 50})`}>
                 {renderBuildingGlyph(ghostBuilding.def.id, {
-                  color: ghostBuilding.ok ? moduleColor(ghostBuilding.def.category) : "#e056a8",
+                  color: ghostBuilding.ok ? moduleColor(ghostBuilding.def.id) : "#e056a8",
                   fillOpacity: 0.22,
                 })}
               </g>

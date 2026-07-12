@@ -1,8 +1,8 @@
 // ============================================================================
-// EventTicker — bottom-left event feed (last 5 events with timestamps)
+// EventTicker — bottom-left event feed; auto-hides after a few seconds
 // ============================================================================
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Info, Siren } from "lucide-react";
 import { useGameStore } from "@/store/gameStore";
 import { fmtTime } from "@/utils/format";
@@ -18,33 +18,53 @@ const KIND_STYLE: Record<
   bad: { icon: <Siren size={10} />, color: "#e056a8" },
 };
 
+const HIDE_DELAY_MS = 4500;
+
 export function EventTicker() {
   const events = useGameStore((s) => s.events);
-  // show the last 5
   const recent = events.slice(-5).reverse();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(true);
+  const lastCount = useRef(events.length);
+  const timer = useRef<number | undefined>(undefined);
 
-  // pulse newest entry when events change
-  const lastId = recent[0]?.id;
+  // Show on new events, auto-hide after delay
   useEffect(() => {
-    if (!scrollRef.current || !lastId) return;
-    const node = scrollRef.current.querySelector<HTMLElement>(`[data-ev="${lastId}"]`);
-    if (node) {
-      node.classList.remove("animate-flash");
-      // force reflow to restart animation
-      void node.offsetWidth;
-      node.classList.add("animate-flash");
+    if (events.length > lastCount.current) {
+      setVisible(true);
+      if (timer.current) window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => setVisible(false), HIDE_DELAY_MS);
     }
-  }, [lastId]);
+    lastCount.current = events.length;
+  }, [events.length]);
+
+  // Initial hide timer for the very first event
+  useEffect(() => {
+    timer.current = window.setTimeout(() => setVisible(false), HIDE_DELAY_MS);
+    return () => {
+      if (timer.current) window.clearTimeout(timer.current);
+    };
+  }, []);
 
   return (
-    <div className="absolute bottom-2 left-2 z-30 pointer-events-auto w-[300px]">
+    <div
+      className={`absolute bottom-2 left-2 z-30 pointer-events-auto w-[300px] transition-all duration-500 ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+      }`}
+      onMouseEnter={() => {
+        if (timer.current) window.clearTimeout(timer.current);
+        setVisible(true);
+      }}
+      onMouseLeave={() => {
+        if (timer.current) window.clearTimeout(timer.current);
+        timer.current = window.setTimeout(() => setVisible(false), HIDE_DELAY_MS);
+      }}
+    >
       <div className="hud-panel corner-brackets">
         <div className="flex items-center justify-between px-2 py-1 border-b border-amber/20">
           <span className="label-tag text-amber">EVENT LOG</span>
           <span className="mono-num text-[9px] text-cream/40">{events.length} ENTRIES</span>
         </div>
-        <div ref={scrollRef} className="max-h-[110px] overflow-y-auto thin-scroll">
+        <div className="max-h-[110px] overflow-y-auto thin-scroll">
           {recent.length === 0 ? (
             <div className="px-2 py-3 font-mono text-[10px] text-cream/40">
               Awaiting telemetry...
@@ -55,7 +75,6 @@ export function EventTicker() {
               return (
                 <div
                   key={ev.id}
-                  data-ev={ev.id}
                   className="flex items-start gap-1.5 px-2 py-1 border-b border-cream/5 last:border-b-0"
                 >
                   <span style={{ color: style.color }} className="mt-0.5 shrink-0">

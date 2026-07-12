@@ -57,6 +57,7 @@ export type BuildingTypeId =
   | "storage_depot"
   | "landing_pad"
   | "rover_depot"
+  | "corridor"
   // signature
   | "rail_launch";
 
