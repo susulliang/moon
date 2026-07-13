@@ -95,31 +95,32 @@ interface GameState {
   lastAutosaveSimTime: number;
 }
 
-const DEFAULT_CAMERA: Camera = { x: 0, y: 0, zoom: 0.18 };
+const DEFAULT_CAMERA: Camera = { x: 0, y: 0, zoom: 0.5 };
 
 function makeInitialBuildings(seed: number): BuildingInstance[] {
   // Pre-seed: 1 nuclear reactor, 1 crew habitat, 1 greenhouse, 1 oxygen plant, 1 water plant,
-  // 1 regolith harvester, 1 fab bay, 1 storage depot, 1 rail launch system
-  // All positions are multiples of GRID_SIZE (40) for grid alignment.
+  // 1 regolith harvester, 1 fab bay, 1 storage depot, 1 rail launch system.
+  // All centers are multiples of GRID_SIZE (40) so buildings align to the grid.
+  // Sizes: 2×2 buildings (nuclear/greenhouse/fab) are 80×80; 1×1 are 40×40; rail is 1×7 (40×280).
+  // Corridors (1×1) chain the hub to the south cluster and stub toward the north cluster.
   const layout: { typeId: BuildingTypeId; x: number; y: number; rotation: number }[] = [
-    { typeId: "nuclear_reactor",     x: -120, y: -80,  rotation: 0 },
-    { typeId: "crew_habitat",         x: 0,    y: -80,  rotation: 0 },
-    { typeId: "greenhouse",           x: 120,  y: -80,  rotation: 0 },
-    { typeId: "oxygen_plant",         x: -80,  y: 40,   rotation: 0 },
-    { typeId: "water_plant",          x: 80,   y: 40,   rotation: 0 },
-    { typeId: "regolith_harvester",   x: -200, y: 80,   rotation: 0 },
-    { typeId: "fab_bay",              x: 200,  y: 80,   rotation: 0 },
-    { typeId: "storage_depot",        x: 0,    y: 120,  rotation: 0 },
-    { typeId: "rail_launch",          x: 0,    y: 240,  rotation: 0 },
-    // Corridors connecting key modules
-    { typeId: "corridor",             x: -80,  y: -80,  rotation: 0 },
-    { typeId: "corridor",             x: -40,  y: -80,  rotation: 0 },
-    { typeId: "corridor",             x: 40,   y: -80,  rotation: 0 },
-    { typeId: "corridor",             x: 80,   y: -80,  rotation: 0 },
-    { typeId: "corridor",             x: 0,    y: -40,  rotation: 0 },
-    { typeId: "corridor",             x: 0,    y: 0,    rotation: 0 },
-    { typeId: "corridor",             x: 0,    y: 40,   rotation: 0 },
-    { typeId: "corridor",             x: 0,    y: 80,   rotation: 0 },
+    // North row — 2×2 industrial modules (1-cell gap between each)
+    { typeId: "nuclear_reactor",   x: -120, y: -120, rotation: 0 },
+    { typeId: "greenhouse",        x:    0, y: -120, rotation: 0 },
+    { typeId: "fab_bay",           x:  120, y: -120, rotation: 0 },
+    // Central hub
+    { typeId: "crew_habitat",      x:    0, y:    0, rotation: 0 },
+    // Corridor spine: stub north + chain south (flush against the 1×1 hub & south row)
+    { typeId: "corridor",          x:    0, y:  -40, rotation: 0 },
+    { typeId: "corridor",          x:    0, y:   40, rotation: 0 },
+    { typeId: "corridor",          x:    0, y:   80, rotation: 0 },
+    // South row — 1×1 utility modules (flush with the corridor chain at y=100)
+    { typeId: "oxygen_plant",      x: -120, y:  120, rotation: 0 },
+    { typeId: "water_plant",       x:  -40, y:  120, rotation: 0 },
+    { typeId: "regolith_harvester",x:   40, y:  120, rotation: 0 },
+    { typeId: "storage_depot",     x:  120, y:  120, rotation: 0 },
+    // Rail launch system — 1×7 (40×280), set off to the east, vertical
+    { typeId: "rail_launch",       x:  240, y:    0, rotation: 0 },
   ];
   return layout.map((l) => ({
     id: rid(),
@@ -165,7 +166,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   initNew: () => {
     const seed = makeSeedFromTime();
-    const terrain = generateTerrain({ seed, size: 480, worldExtent: WORLD_EXTENT, craterCount: 500 });
+    const terrain = generateTerrain({ seed, size: 500, worldExtent: WORLD_EXTENT, craterCount: 500 });
     const buildings = makeInitialBuildings(seed);
     set({
       seed,
@@ -202,7 +203,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   initFromSave: (data: any) => {
     const seed = data.seed ?? makeSeedFromTime();
-    const terrain = generateTerrain({ seed, size: 480, worldExtent: WORLD_EXTENT, craterCount: 500 });
+    const terrain = generateTerrain({ seed, size: 500, worldExtent: WORLD_EXTENT, craterCount: 500 });
     set({
       seed,
       terrain,

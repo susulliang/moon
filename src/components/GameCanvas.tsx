@@ -369,12 +369,13 @@ export function GameCanvas() {
       dragState.current.lastX = e.clientX;
       dragState.current.lastY = e.clientY;
 
-      // Iso pan: convert screen delta to world delta
+      // Iso pan: grab-and-pull (drag right → map moves right, like RA2).
+      // Negate the screen-to-world delta so the world follows the cursor.
       const z = cameraRef.current.zoom;
       cameraRef.current = {
         ...cameraRef.current,
-        x: cameraRef.current.x + (dx + 2 * dy) / (2 * z),
-        y: cameraRef.current.y + (2 * dy - dx) / (2 * z),
+        x: cameraRef.current.x - (dx + 2 * dy) / (2 * z),
+        y: cameraRef.current.y - (2 * dy - dx) / (2 * z),
       };
     }
   };

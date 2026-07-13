@@ -18,17 +18,6 @@ import { canAfford, isPrereqMet } from "@/sim/tick";
 import type { BuildingCategoryId } from "@/sim/types";
 import { fmtNum } from "@/utils/format";
 
-const CATEGORY_ICON: Record<BuildingCategoryId, string> = {
-  power: "PWR",
-  habitat: "HAB",
-  life: "LFE",
-  isru: "ISR",
-  mfg: "MFG",
-  research: "R&D",
-  logistics: "LOG",
-  signature: "SIG",
-};
-
 export function BuildPalette() {
   const [category, setCategory] = useState<BuildingCategoryId>("power");
   const [collapsed, setCollapsed] = useState(false);
@@ -96,10 +85,9 @@ function ModuleList({ category }: { category: BuildingCategoryId }) {
   const resources = useGameStore((s) => s.resources);
   const startPlacement = useGameStore((s) => s.startPlacement);
   const placement = useGameStore((s) => s.placement);
-  const catColor = categoryColor(category);
 
   return (
-    <div className="flex gap-2 p-2 overflow-x-auto thin-scroll">
+    <div className="flex gap-1.5 p-1.5 overflow-x-auto thin-scroll">
       {modules.map((m) => {
         const prereqMet = isPrereqMet(m.prereq, population, researchMilestones);
         const affordable = canAfford(m.cost as any, resources);
@@ -110,7 +98,7 @@ function ModuleList({ category }: { category: BuildingCategoryId }) {
             key={m.id}
             disabled={!enabled}
             onClick={() => startPlacement(m.id)}
-            className={`relative flex flex-col w-[120px] min-w-[120px] p-2 border transition-all ${
+            className={`relative flex flex-col w-[92px] min-w-[92px] p-1.5 border transition-all ${
               isSelected
                 ? "border-amber bg-amber/10 shadow-glow-amber"
                 : enabled
@@ -120,18 +108,18 @@ function ModuleList({ category }: { category: BuildingCategoryId }) {
             title={m.blurb}
           >
             {/* glyph preview */}
-            <div className="h-[44px] flex items-center justify-center">
-              <svg viewBox="-50 -50 100 100" className="w-11 h-11">
+            <div className="h-[28px] flex items-center justify-center">
+              <svg viewBox="-50 -50 100 100" className="w-7 h-7">
                 {renderBuildingGlyph(m.id, { color: moduleColor(m.id), fillOpacity: 0.2 })}
               </svg>
             </div>
 
-            <div className="font-display text-[10px] text-cream leading-tight mt-1 line-clamp-2 min-h-[24px]">
+            <div className="font-display text-[9px] text-cream leading-tight mt-0.5 truncate">
               {m.name}
             </div>
 
             {/* cost row */}
-            <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 mt-1">
+            <div className="flex flex-wrap gap-x-1 gap-y-0.5 mt-0.5">
               {Object.entries(m.cost).map(([k, v]) => {
                 const meta = RESOURCE_META[k as keyof typeof RESOURCE_META];
                 if (!meta) return null;
@@ -139,7 +127,7 @@ function ModuleList({ category }: { category: BuildingCategoryId }) {
                 return (
                   <span
                     key={k}
-                    className={`mono-num text-[8px] ${have ? "text-cream/60" : "text-magenta"}`}
+                    className="mono-num text-[8px] leading-none"
                     style={{ color: have ? meta.color + "aa" : "#e056a8" }}
                   >
                     {meta.abbr}{fmtNum(v as number)}
@@ -148,26 +136,15 @@ function ModuleList({ category }: { category: BuildingCategoryId }) {
               })}
             </div>
 
-            {/* prereq / status */}
-            {!prereqMet && (
-              <div className="font-mono text-[8px] text-magenta mt-1 leading-none">
-                {m.prereq?.pop != null && population < m.prereq.pop ? `NEED POP ${m.prereq.pop}` : ""}
-                {m.prereq?.researchMilestones != null && researchMilestones < m.prereq.researchMilestones ? ` NEED R&D ${m.prereq.researchMilestones}` : ""}
+            {/* prereq / build time */}
+            {!prereqMet ? (
+              <div className="font-mono text-[7px] text-magenta mt-0.5 leading-none truncate">
+                {m.prereq?.pop != null && population < m.prereq.pop ? `POP ${m.prereq.pop}` : ""}
+                {m.prereq?.researchMilestones != null && researchMilestones < m.prereq.researchMilestones ? ` R&D ${m.prereq.researchMilestones}` : ""}
               </div>
+            ) : (
+              <div className="font-mono text-[7px] text-cream/35 mt-0.5 leading-none">{m.buildTime}h</div>
             )}
-            {prereqMet && (
-              <div className="font-mono text-[8px] text-cream/40 mt-1 leading-none">
-                {CATEGORY_ICON[category]} · {m.buildTime}h
-              </div>
-            )}
-
-            {/* corner index */}
-            <span
-              className="absolute top-1 left-1 font-display text-[8px] opacity-50"
-              style={{ color: catColor }}
-            >
-              {m.id.slice(0, 3).toUpperCase()}
-            </span>
           </button>
         );
       })}
