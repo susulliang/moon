@@ -267,10 +267,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       const sup = earthResupply(landingPadCount);
       resources = {
         ...resources,
-        credits: (resources.credits ?? 0) + sup.credits,
         metals: (resources.metals ?? 0) + sup.metals,
         components: (resources.components ?? 0) + sup.components,
         food: (resources.food ?? 0) + sup.food,
+        ore: (resources.ore ?? 0) + sup.ore,
+        fuel: (resources.fuel ?? 0) + sup.fuel,
       };
       result.events = [
         ...result.events,
@@ -278,7 +279,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           id: rid(),
           t: st.simTime + 1,
           kind: "info" as const,
-          text: `Earth resupply landed (+${sup.credits} cr, +${sup.metals} mtl, +${sup.components} cmp, +${sup.food} fd)`,
+          text: `Earth resupply landed (+${sup.metals} mtl, +${sup.components} cmp, +${sup.ore} ore, +${sup.fuel} ful, +${sup.food} fd)`,
         },
       ].slice(-40);
     }

@@ -2,6 +2,7 @@
 // Building catalog — module definitions, costs, production, prereqs
 // All building sizes are multiples of GRID_SIZE (40) and square (n x n).
 // Only rail_launch is 1 x n (long thin).
+// Costs use only physical materials (no credits).
 // ============================================================================
 
 import type { ModuleDef, BuildingTypeId, BuildingCategoryId } from "@/sim/types";
@@ -18,7 +19,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "power",
     name: "Fission Reactor",
     blurb: "Kilopower-class reactor. Baseline power day and night.",
-    cost: { metals: 30, components: 20, credits: 800 },
+    cost: { metals: 60, components: 40 },
     buildTime: 8,
     size: grid(2),
     production: { power: 90 },
@@ -30,7 +31,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "power",
     name: "Solar Array",
     blurb: "Cheap, expandable. Generates power during the lunar day.",
-    cost: { metals: 12, components: 8, credits: 250 },
+    cost: { metals: 24, components: 16 },
     buildTime: 3,
     size: grid(2),
     production: { power: 35 },
@@ -42,7 +43,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "power",
     name: "Battery Bank",
     blurb: "Buffers surplus power for night-side operations.",
-    cost: { metals: 10, components: 14, credits: 300 },
+    cost: { metals: 20, components: 28 },
     buildTime: 2,
     size: grid(1),
     storage: { power: 400 },
@@ -56,7 +57,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "habitat",
     name: "Crew Habitat",
     blurb: "Inflatable module housing 8 colonists.",
-    cost: { metals: 14, components: 12, credits: 400 },
+    cost: { metals: 28, components: 24 },
     buildTime: 4,
     size: grid(1),
     housing: 8,
@@ -68,7 +69,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "habitat",
     name: "Residential Dome",
     blurb: "Pressurized dome housing 60 colonists.",
-    cost: { metals: 60, components: 40, credits: 1800 },
+    cost: { metals: 120, components: 80 },
     buildTime: 14,
     size: grid(3),
     housing: 60,
@@ -81,7 +82,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "habitat",
     name: "Medical Bay",
     blurb: "Boosts population growth rate by improving survivability.",
-    cost: { metals: 18, components: 22, credits: 900 },
+    cost: { metals: 36, components: 44 },
     buildTime: 6,
     size: grid(1),
     consumption: { power: 8, oxygen: 0.5 },
@@ -95,7 +96,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "life",
     name: "Water Plant",
     blurb: "Extracts water from icy regolith.",
-    cost: { metals: 16, components: 14, credits: 500 },
+    cost: { metals: 32, components: 28 },
     buildTime: 4,
     size: grid(1),
     production: { water: 6 },
@@ -108,7 +109,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "life",
     name: "Oxygen Plant",
     blurb: "Electrolyzes regolith to produce oxygen.",
-    cost: { metals: 14, components: 12, credits: 450 },
+    cost: { metals: 28, components: 24 },
     buildTime: 4,
     size: grid(1),
     production: { oxygen: 8 },
@@ -121,7 +122,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "life",
     name: "Greenhouse",
     blurb: "Grow food crops; produces small oxygen byproduct.",
-    cost: { metals: 18, components: 16, credits: 600 },
+    cost: { metals: 36, components: 32 },
     buildTime: 5,
     size: grid(2),
     production: { food: 4, oxygen: 1 },
@@ -134,7 +135,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "life",
     name: "Waste Recycler",
     blurb: "Closes the life-support loop, reducing input demand.",
-    cost: { metals: 12, components: 18, credits: 550 },
+    cost: { metals: 24, components: 36 },
     buildTime: 4,
     size: grid(1),
     production: { water: 2, oxygen: 1 },
@@ -149,7 +150,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "isru",
     name: "Regolith Harvester",
     blurb: "Surface scraper extracting ore from regolith.",
-    cost: { metals: 14, components: 10, credits: 350 },
+    cost: { metals: 28, components: 20 },
     buildTime: 3,
     size: grid(1),
     production: { ore: 5 },
@@ -162,7 +163,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "isru",
     name: "Regolith Excavator",
     blurb: "Deep bore excavator. Higher yield, higher power draw.",
-    cost: { metals: 30, components: 22, credits: 900 },
+    cost: { metals: 60, components: 44 },
     buildTime: 7,
     size: grid(2),
     production: { ore: 14, helium3: 0.04 },
@@ -176,7 +177,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "isru",
     name: "Helium-3 Extractor",
     blurb: "Refines He-3 from regolith. Critical for advanced research.",
-    cost: { metals: 40, components: 35, credits: 1500 },
+    cost: { metals: 80, components: 70 },
     buildTime: 9,
     size: grid(1),
     production: { helium3: 0.5 },
@@ -192,7 +193,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "mfg",
     name: "Fabrication Bay",
     blurb: "Smelts ore into refined metals.",
-    cost: { metals: 18, components: 16, credits: 600 },
+    cost: { metals: 36, components: 32 },
     buildTime: 5,
     size: grid(2),
     production: { metals: 4 },
@@ -205,7 +206,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "mfg",
     name: "Parts Factory",
     blurb: "Refines metals into machine components.",
-    cost: { metals: 30, components: 20, credits: 1000 },
+    cost: { metals: 60, components: 40 },
     buildTime: 7,
     size: grid(2),
     production: { components: 5 },
@@ -219,7 +220,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "mfg",
     name: "Shipyard",
     blurb: "Manufactures Mars-bound ship components and fuel cells.",
-    cost: { metals: 80, components: 50, credits: 3000 },
+    cost: { metals: 160, components: 100 },
     buildTime: 16,
     size: grid(3),
     production: { fuel: 4, components: 2 },
@@ -235,7 +236,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "research",
     name: "Research Lab",
     blurb: "Generates research points. Unlocks advanced modules.",
-    cost: { metals: 20, components: 24, credits: 1000 },
+    cost: { metals: 40, components: 48 },
     buildTime: 6,
     size: grid(1),
     production: { research: 1.5 },
@@ -248,7 +249,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "research",
     name: "Observatory",
     blurb: "Deep-space observation. Boosts research and logistics scanning.",
-    cost: { metals: 30, components: 30, credits: 1400 },
+    cost: { metals: 60, components: 60 },
     buildTime: 8,
     size: grid(2),
     production: { research: 2 },
@@ -262,7 +263,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "research",
     name: "Mars Mission Control",
     blurb: "Coordinates Mars flights. Boosts rail launch throughput.",
-    cost: { metals: 60, components: 60, credits: 4000 },
+    cost: { metals: 120, components: 120 },
     buildTime: 14,
     size: grid(2),
     production: { research: 1.5 },
@@ -278,7 +279,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "logistics",
     name: "Storage Depot",
     blurb: "Increases storage capacity for ore, metals, fuel, components.",
-    cost: { metals: 14, components: 8, credits: 300 },
+    cost: { metals: 28, components: 16 },
     buildTime: 3,
     size: grid(1),
     storage: { ore: 200, metals: 200, fuel: 100, components: 100, helium3: 50 },
@@ -289,8 +290,8 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     id: "landing_pad",
     category: "logistics",
     name: "Landing Pad",
-    blurb: "Receives Earth resupply landings. Periodic credit + supplies.",
-    cost: { metals: 24, components: 12, credits: 700 },
+    blurb: "Receives Earth resupply landings. Periodic materials delivery.",
+    cost: { metals: 48, components: 24 },
     buildTime: 5,
     size: grid(2),
     popRequired: 2,
@@ -301,7 +302,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "logistics",
     name: "Rover Depot",
     blurb: "Boosts intra-base logistics efficiency (+5% mining & mfg).",
-    cost: { metals: 18, components: 14, credits: 500 },
+    cost: { metals: 36, components: 28 },
     buildTime: 4,
     size: grid(1),
     popRequired: 2,
@@ -312,7 +313,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "logistics",
     name: "Corridor",
     blurb: "Pressurized walkway connecting modules for crew movement.",
-    cost: { metals: 4, credits: 80 },
+    cost: { metals: 8 },
     buildTime: 1,
     size: grid(1),
     popRequired: 0,
@@ -325,7 +326,7 @@ export const MODULE_CATALOG: Record<BuildingTypeId, ModuleDef> = {
     category: "signature",
     name: "Rail Launch System",
     blurb: "Electromagnetic mass driver. Launches payloads to orbit / Mars.",
-    cost: { metals: 120, components: 80, credits: 6000 },
+    cost: { metals: 240, components: 160 },
     buildTime: 18,
     size: { w: GRID_SIZE, h: GRID_SIZE * 7 }, // 1 x 7 grid (long thin)
     production: {},
@@ -354,36 +355,21 @@ export function getModulesByCategory(cat: BuildingCategoryId): ModuleDef[] {
   return Object.values(MODULE_CATALOG).filter((m) => m.category === cat);
 }
 
-/** Category-level color — mostly greyscale. */
-export function categoryColor(category: BuildingCategoryId): string {
-  switch (category) {
-    case "power":     return "#9aa4b0";
-    case "habitat":   return "#b0a89c";
-    case "life":      return "#8a94a0";
-    case "isru":      return "#a89a82";
-    case "mfg":       return "#8a9098";
-    case "research":  return "#889aaa";
-    case "logistics": return "#a0988a";
-    case "signature": return "#8a94a8";
+export function categoryColor(cat: BuildingCategoryId): string {
+  switch (cat) {
+    case "power":      return "#ffb454";
+    case "habitat":    return "#7be2a8";
+    case "life":       return "#56d4e0";
+    case "isru":       return "#b8a98a";
+    case "mfg":        return "#c8c8d0";
+    case "research":   return "#a8e0ff";
+    case "logistics":  return "#ffd86b";
+    case "signature":  return "#e0c8ff";
   }
 }
 
-/**
- * Per-building color. Mostly greyscale with specific accents:
- *  - oxygen_plant → blue
- *  - greenhouse   → green (plants/food)
- *  - rail_launch   → steel
- *  - corridor      → light steel
- */
 export function moduleColor(typeId: BuildingTypeId): string {
-  switch (typeId) {
-    case "oxygen_plant":  return "#56d4e0";
-    case "greenhouse":    return "#7be2a8";
-    case "rail_launch":   return "#8a94a8";
-    case "corridor":      return "#9aa4b0";
-    default: {
-      const def = MODULE_CATALOG[typeId];
-      return def ? categoryColor(def.category) : "#9aa4b0";
-    }
-  }
+  const def = MODULE_CATALOG[typeId];
+  if (!def) return "#ffffff";
+  return categoryColor(def.category);
 }

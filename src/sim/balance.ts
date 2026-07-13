@@ -50,26 +50,25 @@ export const RESOURCE_META: Record<ResourceId, ResourceMeta> = {
   components:{ id: "components",label: "Components",   abbr: "CMP", color: "#ffd86b", unit: "u",  icon: "Cpu" },
   research:  { id: "research",  label: "Research",     abbr: "R&D", color: "#a8e0ff", unit: "pt", icon: "FlaskConical" },
   helium3:   { id: "helium3",   label: "Helium-3",     abbr: "He3", color: "#e0c8ff", unit: "g",  icon: "Atom" },
-  credits:   { id: "credits",   label: "Credits",      abbr: "CR",  color: "#7be2a8", unit: "cr", icon: "Coins" },
 };
 
 export const RESOURCE_ORDER: ResourceId[] = [
-  "power", "oxygen", "water", "food", "ore", "metals", "fuel", "components", "research", "helium3", "credits",
+  "power", "oxygen", "water", "food", "ore", "metals", "fuel", "components", "research", "helium3",
 ];
 
-// Initial stockpile given on new game — generous to let players build freely
+// Initial stockpile given on new game — generous to let players build freely.
+// No credits: buildings cost only physical materials (metals/components/ore/fuel).
 export const START_RESOURCES: Record<string, number> = {
   power: 2000,
   oxygen: 800,
   water: 800,
   food: 600,
-  ore: 500,
-  metals: 500,
-  fuel: 200,
-  components: 300,
+  ore: 1500,
+  metals: 1500,
+  fuel: 400,
+  components: 900,
   research: 0,
   helium3: 0,
-  credits: 50000,
 };
 
 export const START_POPULATION = 24;

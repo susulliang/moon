@@ -226,13 +226,18 @@ export function simulateTick(
           text: `Mars ship launched! Flight #${marsFlightsCompleted}`,
         });
       } else {
-        // satellite / equipment → small credit + logistics bonus
-        next.credits = (next.credits ?? 0) + (job.payload === "satellite" ? 600 : 1200);
+        // satellite / equipment → small research + materials bonus (no credits)
+        const bonus = job.payload === "satellite"
+          ? { research: 4, components: 4 }
+          : { research: 8, metals: 10, components: 6 };
+        for (const [k, v] of Object.entries(bonus)) {
+          next[k] = (next[k] ?? 0) + (v as number);
+        }
         newEvents.push({
           id: rid(),
           t: prev.simTime + 1,
           kind: "info",
-          text: `${job.payload} payload launched (+${job.payload === "satellite" ? 600 : 1200} cr)`,
+          text: `${job.payload} payload launched (+${bonus.research} R&D)`,
         });
       }
     } else {
@@ -285,14 +290,15 @@ export function rid(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-// Earth resupply from landing pad: every N hours, gives credits + small materials
-export function earthResupply(landingPadCount: number): { credits: number; metals: number; components: number; food: number } {
-  if (landingPadCount <= 0) return { credits: 0, metals: 0, components: 0, food: 0 };
+// Earth resupply from landing pad: every N hours, delivers raw materials (no credits).
+export function earthResupply(landingPadCount: number): { metals: number; components: number; food: number; ore: number; fuel: number } {
+  if (landingPadCount <= 0) return { metals: 0, components: 0, food: 0, ore: 0, fuel: 0 };
   return {
-    credits: 800 * landingPadCount,
-    metals: 15 * landingPadCount,
-    components: 10 * landingPadCount,
+    metals: 30 * landingPadCount,
+    components: 20 * landingPadCount,
     food: 20 * landingPadCount,
+    ore: 40 * landingPadCount,
+    fuel: 10 * landingPadCount,
   };
 }
 

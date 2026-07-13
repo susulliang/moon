@@ -4,7 +4,6 @@
 
 import {
   Atom,
-  Coins,
   Cpu,
   Droplets,
   Flame,
@@ -28,7 +27,7 @@ import { fmtClock, fmtNum } from "@/utils/format";
 import type { ResourceId } from "@/sim/types";
 
 const ICON_MAP: Record<string, any> = {
-  Zap, Wind, Droplets, Salad, Mountain, Layers, Flame, Cpu, FlaskConical, Atom, Coins,
+  Zap, Wind, Droplets, Salad, Mountain, Layers, Flame, Cpu, FlaskConical, Atom,
 };
 
 export function Hud() {

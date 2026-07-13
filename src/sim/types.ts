@@ -12,8 +12,7 @@ export type ResourceId =
   | "fuel"
   | "components"
   | "research"
-  | "helium3"
-  | "credits";
+  | "helium3";
 
 export type Resources = Partial<Record<ResourceId, number>>;
 
