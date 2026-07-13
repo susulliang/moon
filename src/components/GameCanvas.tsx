@@ -1,8 +1,6 @@
 // ============================================================================
-// GameCanvas — single-canvas renderer with rAF loop
-// All rendering (terrain + grid + buildings + rail launch + ghost + selection)
-// happens on ONE canvas via a requestAnimationFrame loop.
-// Camera uses a ref (not React state) to avoid re-renders during pan/zoom.
+// GameCanvas — isometric (RA2-style) single-canvas renderer with rAF loop
+// Terrain drawn as diamond via canvas transform. Buildings depth-sorted.
 // ============================================================================
 
 import { useEffect, useMemo, useRef } from "react";
@@ -12,41 +10,40 @@ import { renderTerrainImage, paintTerrainCanvas } from "@/terrain/hillshade";
 import { MODULE_CATALOG, moduleColor } from "@/buildings/catalog";
 import {
   getBuildingCanvas,
+  getSpriteDims,
   prerasterizeAllBuildings,
   computeCorridorNeighborsMap,
 } from "@/buildings/rasterize";
 import type { CorridorNeighbors } from "@/buildings/glyphs";
+import type { BuildingInstance } from "@/sim/types";
 
 export function GameCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // High-frequency state in refs (no React re-render)
-  const cameraRef = useRef<Camera>({ x: 0, y: 0, zoom: 0.7 });
+  const cameraRef = useRef<Camera>({ x: 0, y: 0, zoom: 0.18 });
   const viewportRef = useRef({ w: 800, h: 600 });
   const cursorWorldRef = useRef<{ x: number; y: number } | null>(null);
   const dragState = useRef({ active: false, lastX: 0, lastY: 0, moved: false });
   const pinchState = useRef({ active: false, dist: 0, zoom: 0 });
 
-  // Sync camera ref from store (for programmatic changes: home button, keyboard)
+  // Sync camera ref from store
   const storeCamera = useGameStore((s) => s.camera);
   useEffect(() => {
     cameraRef.current = storeCamera;
   }, [storeCamera]);
 
-  // Terrain offscreen canvas (cached, rendered once)
+  // Terrain offscreen canvas
   const terrainCanvas = useMemo(() => {
     if (typeof document === "undefined") return null;
     return document.createElement("canvas");
   }, []);
   const terrain = useGameStore((s) => s.terrain);
 
-  // Render terrain image once on terrain change
   useEffect(() => {
     if (!terrain || !terrainCanvas) return;
     const pixels = renderTerrainImage(terrain);
     paintTerrainCanvas(terrainCanvas, terrain, pixels);
-    // Pre-warm building cache
     prerasterizeAllBuildings();
   }, [terrain, terrainCanvas]);
 
@@ -73,14 +70,21 @@ export function GameCanvas() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // === Iso helpers ===
+  function w2sX(wx: number, wy: number, cam: Camera, vw: number): number {
+    return (wx - cam.x - (wy - cam.y)) * cam.zoom + vw / 2;
+  }
+  function w2sY(wx: number, wy: number, cam: Camera, vh: number): number {
+    return ((wx - cam.x) + (wy - cam.y)) * cam.zoom * 0.5 + vh / 2;
+  }
+
   function render() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const state = useGameStore.getState();
-    const camera = cameraRef.current;
+    const cam = cameraRef.current;
     const vp = viewportRef.current;
 
-    // Ensure canvas matches viewport
     if (canvas.width !== vp.w || canvas.height !== vp.h) {
       canvas.width = vp.w;
       canvas.height = vp.h;
@@ -89,148 +93,147 @@ export function GameCanvas() {
     ctx.imageSmoothingEnabled = false;
 
     // 1. Background
-    ctx.fillStyle = "#0a0b0e";
+    ctx.fillStyle = "#08090c";
     ctx.fillRect(0, 0, vp.w, vp.h);
 
     if (!state.terrain || !terrainCanvas) return;
 
     const half = WORLD_EXTENT / 2;
-    const worldLeft = camera.x - vp.w / 2 / camera.zoom;
-    const worldTop = camera.y - vp.h / 2 / camera.zoom;
-    const worldRight = camera.x + vp.w / 2 / camera.zoom;
-    const worldBottom = camera.y + vp.h / 2 / camera.zoom;
-    const size = state.terrain.size;
 
-    // 2. Blit terrain slice
-    const sx = ((worldLeft + half) / WORLD_EXTENT) * size;
-    const sy = ((worldTop + half) / WORLD_EXTENT) * size;
-    const sWidth = ((worldRight - worldLeft) / WORLD_EXTENT) * size;
-    const sHeight = ((worldBottom - worldTop) / WORLD_EXTENT) * size;
-    ctx.drawImage(terrainCanvas, sx, sy, sWidth, sHeight, 0, 0, vp.w, vp.h);
+    // 2. Blit terrain as iso diamond using canvas transform
+    // Iso transform: world (x,y) → screen (sx, sy)
+    //   sx = (x - y) * zoom + vw/2 - (cam.x - cam.y) * zoom
+    //   sy = (x + y) * zoom * 0.5 + vh/2 - (cam.x + cam.y) * zoom * 0.5
+    // Matrix: [zoom, zoom*0.5, -zoom, zoom*0.5, e, f]
+    ctx.save();
+    ctx.setTransform(
+      cam.zoom,           // a
+      cam.zoom * 0.5,     // b
+      -cam.zoom,          // c
+      cam.zoom * 0.5,     // d
+      vp.w / 2 - (cam.x - cam.y) * cam.zoom,          // e
+      vp.h / 2 - (cam.x + cam.y) * cam.zoom * 0.5,    // f
+    );
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(terrainCanvas, -half, -half, WORLD_EXTENT, WORLD_EXTENT);
+    ctx.restore();
 
-    // World→screen helpers
-    const w2sX = (wx: number) => (wx - camera.x) * camera.zoom + vp.w / 2;
-    const w2sY = (wy: number) => (wy - camera.y) * camera.zoom + vp.h / 2;
+    // Reset transform to identity for screen-space drawing
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    // 3. World bounds frame
-    ctx.strokeStyle = "rgba(255, 180, 84, 0.25)";
+    // 3. World bounds frame (iso diamond)
+    ctx.strokeStyle = "rgba(255, 180, 84, 0.3)";
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 6]);
-    ctx.strokeRect(w2sX(-half), w2sY(-half), w2sX(half) - w2sX(-half), w2sY(half) - w2sY(-half));
+    ctx.beginPath();
+    // Diamond corners: (-half,-half), (half,-half), (half,half), (-half,half)
+    ctx.moveTo(w2sX(-half, -half, cam, vp.w), w2sY(-half, -half, cam, vp.h));
+    ctx.lineTo(w2sX(half, -half, cam, vp.w), w2sY(half, -half, cam, vp.h));
+    ctx.lineTo(w2sX(half, half, cam, vp.w), w2sY(half, half, cam, vp.h));
+    ctx.lineTo(w2sX(-half, half, cam, vp.w), w2sY(-half, half, cam, vp.h));
+    ctx.closePath();
+    ctx.stroke();
     ctx.setLineDash([]);
 
-    // 4. Grid (batched into single path)
-    if (camera.zoom > 0.3) {
-      ctx.strokeStyle = state.placement ? "rgba(255,180,84,0.18)" : "rgba(255,180,84,0.06)";
+    // 4. Grid (iso diamond grid)
+    if (cam.zoom > 0.08) {
+      ctx.strokeStyle = state.placement ? "rgba(255,180,84,0.15)" : "rgba(255,180,84,0.05)";
       ctx.lineWidth = 0.5;
       ctx.beginPath();
       const step = GRID_SIZE;
-      const startX = Math.ceil(worldLeft / step) * step;
-      const startY = Math.ceil(worldTop / step) * step;
-      for (let x = startX; x <= worldRight; x += step) {
-        const px = w2sX(x);
-        ctx.moveTo(px, 0);
-        ctx.lineTo(px, vp.h);
+      // Lines along world X axis (varying Y)
+      for (let y = -half; y <= half; y += step) {
+        ctx.moveTo(w2sX(-half, y, cam, vp.w), w2sY(-half, y, cam, vp.h));
+        ctx.lineTo(w2sX(half, y, cam, vp.w), w2sY(half, y, cam, vp.h));
       }
-      for (let y = startY; y <= worldBottom; y += step) {
-        const py = w2sY(y);
-        ctx.moveTo(0, py);
-        ctx.lineTo(vp.w, py);
+      // Lines along world Y axis (varying X)
+      for (let x = -half; x <= half; x += step) {
+        ctx.moveTo(w2sX(x, -half, cam, vp.w), w2sY(x, -half, cam, vp.h));
+        ctx.lineTo(w2sX(x, half, cam, vp.w), w2sY(x, half, cam, vp.h));
       }
       ctx.stroke();
     }
 
-    // 5. Buildings (rasterized, drawn via drawImage)
+    // 5. Buildings — depth-sorted (painter's algorithm: back to front)
     const buildings = state.buildings;
     const selectedId = state.selectedBuildingId;
     const simTime = state.simTime;
 
-    // Compute corridor neighbors
     const corridorNeighbors = computeCorridorNeighborsMap(buildings);
 
-    // Cull + draw
-    const margin = 200;
-    const halfW = vp.w / 2 / camera.zoom + margin;
-    const halfH = vp.h / 2 / camera.zoom + margin;
+    // Sort by (x + y) ascending — lower sum = farther back = drawn first
+    const sorted = [...buildings].sort((a, b) => {
+      const da = a.x + a.y + (a.typeId === "corridor" ? -50 : 0);
+      const db = b.x + b.y + (b.typeId === "corridor" ? -50 : 0);
+      return da - db;
+    });
 
-    for (const b of buildings) {
+    for (const b of sorted) {
       const def = MODULE_CATALOG[b.typeId];
       if (!def) continue;
-      const bm = Math.max(def.size.w, def.size.h);
-      if (b.x < camera.x - halfW - bm || b.x > camera.x + halfW + bm ||
-          b.y < camera.y - halfH - bm || b.y > camera.y + halfH + bm) continue;
+
+      const bsx = w2sX(b.x, b.y, cam, vp.w);
+      const bsy = w2sY(b.x, b.y, cam, vp.h);
+
+      // Cull if off-screen
+      const dims = getSpriteDims(b.typeId);
+      const drawW = dims.canvasW * cam.zoom;
+      const drawH = dims.canvasH * cam.zoom;
+      if (bsx + drawW < 0 || bsx - drawW > vp.w || bsy + drawH < 0 || bsy - drawH > vp.h) continue;
+
+      const hw = def.size.w * cam.zoom;
+      const hh = def.size.w * 0.5 * cam.zoom;
 
       const neighbors = b.typeId === "corridor" ? corridorNeighbors.get(b.id) : undefined;
       const bc = getBuildingCanvas(b.typeId, neighbors);
       if (!bc) continue;
 
-      const bsx = w2sX(b.x);
-      const bsy = w2sY(b.y);
-      // Building glyph canvas is 100x100 matching the viewBox.
-      // The building's world size is def.size.w; scale glyph to match.
-      const drawScale = (def.size.w / 50) * camera.zoom;
-      const drawSize = 100 * drawScale;
+      // Draw building sprite: base center aligned to building's iso screen position
+      const drawX = bsx - dims.baseCenterX * cam.zoom;
+      const drawY = bsy - dims.baseCenterY * cam.zoom;
 
       ctx.save();
       ctx.globalAlpha = b.status === "construction" ? 0.45 : 1;
-      ctx.drawImage(bc, bsx - drawSize / 2, bsy - drawSize / 2, drawSize, drawSize);
+      ctx.drawImage(bc, drawX, drawY, drawW, drawH);
       ctx.restore();
 
-      // Selection ring
+      // Selection ring (iso diamond)
       if (b.id === selectedId) {
-        const r = Math.max(def.size.w, def.size.h) * camera.zoom * 0.7;
         const pulse = 1 + Math.sin(simTime * 2) * 0.05;
         ctx.strokeStyle = moduleColor(b.typeId);
         ctx.lineWidth = 1.5;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
-        ctx.arc(bsx, bsy, r * pulse, 0, Math.PI * 2);
+        ctx.moveTo(bsx, bsy - hh * pulse);
+        ctx.lineTo(bsx + hw * pulse, bsy);
+        ctx.lineTo(bsx, bsy + hh * pulse);
+        ctx.lineTo(bsx - hw * pulse, bsy);
+        ctx.closePath();
         ctx.stroke();
         ctx.setLineDash([]);
       }
 
-      // Construction scaffold + progress
+      // Construction progress bar
       if (b.status === "construction") {
-        ctx.strokeStyle = moduleColor(b.typeId);
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.globalAlpha = 0.7;
-        ctx.strokeRect(
-          bsx - def.size.w * camera.zoom / 2 - 4,
-          bsy - def.size.h * camera.zoom / 2 - 4,
-          def.size.w * camera.zoom + 8,
-          def.size.h * camera.zoom + 8,
-        );
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
-
-        const pbx = bsx - def.size.w * camera.zoom / 2;
-        const pby = bsy + def.size.h * camera.zoom / 2 + 6;
+        const pbx = bsx - 20 * cam.zoom;
+        const pby = bsy + def.size.w * 0.5 * cam.zoom + 8;
         ctx.fillStyle = "rgba(255,180,84,0.18)";
-        ctx.fillRect(pbx, pby, def.size.w * camera.zoom, 3);
+        ctx.fillRect(pbx, pby, 40 * cam.zoom, 3);
         ctx.fillStyle = moduleColor(b.typeId);
-        ctx.fillRect(pbx, pby, def.size.w * camera.zoom * b.constructionProgress, 3);
+        ctx.fillRect(pbx, pby, 40 * cam.zoom * b.constructionProgress, 3);
       }
 
       // Level pips
-      if (def.maxLevel != null && def.maxLevel > 1 && b.level > 0) {
+      if (def.maxLevel != null && def.maxLevel > 1 && b.level > 0 && cam.zoom > 0.15) {
+        const pipSize = Math.max(2, 3 * cam.zoom);
         for (let i = 0; i < def.maxLevel; i++) {
           ctx.fillStyle = i < b.level ? moduleColor(b.typeId) : "rgba(255,255,255,0.15)";
           ctx.fillRect(
-            bsx + def.size.w * camera.zoom / 2 - 2 - i * 4 - 3,
-            bsy - def.size.h * camera.zoom / 2 + 2,
-            3, 3,
+            bsx + hw - 2 - i * (pipSize + 1),
+            bsy - hh - pipSize - 2,
+            pipSize, pipSize,
           );
         }
-      }
-
-      // Status indicator
-      if (b.status !== "construction" && camera.zoom > 0.8) {
-        const blink = 0.4 + Math.abs(Math.sin(simTime * 0.5 + b.x)) * 0.6;
-        ctx.fillStyle = moduleColor(b.typeId);
-        ctx.globalAlpha = blink;
-        ctx.fillRect(bsx + def.size.w * camera.zoom / 2 - 4, bsy - def.size.h * camera.zoom / 2 + 2, 2, 2);
-        ctx.globalAlpha = 1;
       }
     }
 
@@ -242,14 +245,15 @@ export function GameCanvas() {
         for (const job of state.launchQueue) {
           const travelExtent = 60;
           const px = rail.x - def.size.w / 2 + (def.size.w + travelExtent) * job.progress;
-          const sxp = w2sX(px);
-          const syp = w2sY(rail.y);
+          const py = rail.y;
+          const sxp = w2sX(px, py, cam, vp.w);
+          const syp = w2sY(px, py, cam, vp.h);
 
-          // Streak
-          ctx.strokeStyle = "rgba(255,180,84,0.6)";
+          // Streak (along iso east direction)
+          ctx.strokeStyle = "rgba(255,180,84,0.5)";
           ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.moveTo(sxp - 20 * camera.zoom, syp);
+          ctx.moveTo(sxp - 20 * cam.zoom, syp - 10 * cam.zoom);
           ctx.lineTo(sxp, syp);
           ctx.stroke();
 
@@ -258,21 +262,13 @@ export function GameCanvas() {
           ctx.fillStyle = payloadColor;
           ctx.globalAlpha = 0.9;
           ctx.beginPath();
-          ctx.arc(sxp, syp, 4 * camera.zoom, 0, Math.PI * 2);
+          ctx.arc(sxp, syp, 4 * cam.zoom, 0, Math.PI * 2);
           ctx.fill();
           ctx.globalAlpha = 0.3;
           ctx.beginPath();
-          ctx.arc(sxp, syp, 8 * camera.zoom, 0, Math.PI * 2);
+          ctx.arc(sxp, syp, 8 * cam.zoom, 0, Math.PI * 2);
           ctx.fill();
           ctx.globalAlpha = 1;
-
-          // Progress label
-          if (camera.zoom > 0.5) {
-            ctx.fillStyle = "rgba(255,180,84,0.7)";
-            ctx.font = "9px IBM Plex Mono, monospace";
-            ctx.textAlign = "center";
-            ctx.fillText(`${job.payload.toUpperCase()} ${(job.progress * 100).toFixed(0)}%`, sxp, syp - 14);
-          }
         }
       }
     }
@@ -286,7 +282,31 @@ export function GameCanvas() {
         const preview = state.canPlacePreview(gx, gy);
         const ok = preview.ok;
 
-        // Compute ghost corridor neighbors
+        const gsx = w2sX(gx, gy, cam, vp.w);
+        const gsy = w2sY(gx, gy, cam, vp.h);
+
+        // Diamond footprint outline
+        const hw = def.size.w * cam.zoom;
+        const hh = def.size.w * 0.5 * cam.zoom;
+
+        // Fill diamond
+        ctx.fillStyle = ok ? "rgba(123,226,168,0.15)" : "rgba(224,86,168,0.15)";
+        ctx.beginPath();
+        ctx.moveTo(gsx, gsy - hh);
+        ctx.lineTo(gsx + hw, gsy);
+        ctx.lineTo(gsx, gsy + hh);
+        ctx.lineTo(gsx - hw, gsy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Outline
+        ctx.strokeStyle = ok ? "#7be2a8" : "#e056a8";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Ghost building sprite
         let ghostNeighbors: CorridorNeighbors | undefined;
         if (def.id === "corridor") {
           const check = (x: number, y: number) => {
@@ -306,56 +326,28 @@ export function GameCanvas() {
           };
         }
 
-        const gsx = w2sX(gx);
-        const gsy = w2sY(gy);
-
-        // Glow circle
-        const r = Math.max(def.size.w, def.size.h) * camera.zoom * 0.65;
-        const grad = ctx.createRadialGradient(gsx, gsy, 0, gsx, gsy, r);
-        if (ok) {
-          grad.addColorStop(0, "rgba(123,226,168,0.25)");
-          grad.addColorStop(1, "rgba(123,226,168,0)");
-        } else {
-          grad.addColorStop(0, "rgba(224,86,168,0.3)");
-          grad.addColorStop(1, "rgba(224,86,168,0)");
-        }
-        ctx.fillStyle = grad;
-        ctx.fillRect(gsx - r, gsy - r, r * 2, r * 2);
-
-        // Ghost building
         const ghostCanvas = getBuildingCanvas(def.id, ghostNeighbors);
         if (ghostCanvas) {
-          const drawScale = (def.size.w / 50) * camera.zoom;
-          const drawSize = 100 * drawScale;
+          const gd = getSpriteDims(def.id);
+          const drawX = gsx - gd.baseCenterX * cam.zoom;
+          const drawY = gsy - gd.baseCenterY * cam.zoom;
           ctx.globalAlpha = 0.5;
-          ctx.drawImage(ghostCanvas, gsx - drawSize / 2, gsy - drawSize / 2, drawSize, drawSize);
+          ctx.drawImage(ghostCanvas, drawX, drawY, gd.canvasW * cam.zoom, gd.canvasH * cam.zoom);
           ctx.globalAlpha = 1;
         }
-
-        // Dashed border
-        ctx.strokeStyle = ok ? "#ffb454" : "#e056a8";
-        ctx.lineWidth = 1.2;
-        ctx.setLineDash([4, 3]);
-        ctx.strokeRect(
-          gsx - def.size.w * camera.zoom / 2 - 4,
-          gsy - def.size.h * camera.zoom / 2 - 4,
-          def.size.w * camera.zoom + 8,
-          def.size.h * camera.zoom + 8,
-        );
-        ctx.setLineDash([]);
 
         // Reason text
         if (preview.reason) {
           ctx.fillStyle = "#e056a8";
           ctx.font = "10px IBM Plex Mono, monospace";
           ctx.textAlign = "center";
-          ctx.fillText(preview.reason, gsx, gsy + def.size.h * camera.zoom / 2 + 14);
+          ctx.fillText(preview.reason, gsx, gsy + hh + 14);
         }
       }
     }
   }
 
-  // === Pan / Zoom handlers (update refs directly, no React re-render) ===
+  // === Pan / Zoom (iso-aware) ===
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === "touch" && e.isPrimary === false) return;
     (e.target as Element).setPointerCapture?.(e.pointerId);
@@ -376,10 +368,13 @@ export function GameCanvas() {
       if (Math.abs(dx) + Math.abs(dy) > 3) dragState.current.moved = true;
       dragState.current.lastX = e.clientX;
       dragState.current.lastY = e.clientY;
+
+      // Iso pan: convert screen delta to world delta
+      const z = cameraRef.current.zoom;
       cameraRef.current = {
         ...cameraRef.current,
-        x: cameraRef.current.x - dx / cameraRef.current.zoom,
-        y: cameraRef.current.y - dy / cameraRef.current.zoom,
+        x: cameraRef.current.x + (dx + 2 * dy) / (2 * z),
+        y: cameraRef.current.y + (2 * dy - dx) / (2 * z),
       };
     }
   };
@@ -387,8 +382,6 @@ export function GameCanvas() {
   const onPointerUp = (e: React.PointerEvent) => {
     const wasMoved = dragState.current.moved;
     dragState.current.active = false;
-
-    // Sync camera to store (for save/keyboard)
     useGameStore.getState().setCamera(cameraRef.current);
 
     if (wasMoved) return;
@@ -424,10 +417,7 @@ export function GameCanvas() {
     const worldBefore = screenToWorld(localX, localY, cam, vp.w, vp.h);
     const factor = Math.exp(-e.deltaY * 0.0014);
     const newZoom = clampZoom(cam.zoom * factor);
-    const worldAfter = {
-      x: (localX - vp.w / 2) / newZoom + cam.x,
-      y: (localY - vp.h / 2) / newZoom + cam.y,
-    };
+    const worldAfter = screenToWorld(localX, localY, { ...cam, zoom: newZoom }, vp.w, vp.h);
     cameraRef.current = {
       zoom: newZoom,
       x: cam.x + (worldBefore.x - worldAfter.x),
@@ -472,7 +462,7 @@ export function GameCanvas() {
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      style={{ cursor: useGameStore.getState().placement ? "crosshair" : dragState.current.active ? "grabbing" : "grab" }}
+      style={{ cursor: useGameStore.getState().placement ? "crosshair" : "grab" }}
     >
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
       <CameraReadout cameraRef={cameraRef} cursorWorldRef={cursorWorldRef} />
@@ -480,10 +470,10 @@ export function GameCanvas() {
   );
 }
 
-function findBuildingAt(wx: number, wy: number, buildings: any[]): any | null {
+function findBuildingAt(wx: number, wy: number, buildings: BuildingInstance[]): BuildingInstance | null {
   for (let i = buildings.length - 1; i >= 0; i--) {
     const b = buildings[i];
-    const def = MODULE_CATALOG[b.typeId as keyof typeof MODULE_CATALOG];
+    const def = MODULE_CATALOG[b.typeId];
     if (!def) continue;
     const halfW = def.size.w / 2 + 4;
     const halfH = def.size.h / 2 + 4;
@@ -494,7 +484,6 @@ function findBuildingAt(wx: number, wy: number, buildings: any[]): any | null {
   return null;
 }
 
-// Lightweight camera readout (updates via rAF, no React state)
 function CameraReadout({
   cameraRef,
   cursorWorldRef,
@@ -509,8 +498,8 @@ function CameraReadout({
       if (ref.current) {
         const cam = cameraRef.current;
         const cur = cursorWorldRef.current;
-        ref.current.innerHTML = `ZOOM ×${cam.zoom.toFixed(2)}<br/>CAM ${cam.x.toFixed(0)}, ${cam.y.toFixed(0)}${
-          cur ? `<br/>CUR ${cur.x.toFixed(0)}, ${cur.y.toFixed(0)}` : ""
+        ref.current.textContent = `ZOOM ×${cam.zoom.toFixed(2)}  CAM ${cam.x.toFixed(0)},${cam.y.toFixed(0)}${
+          cur ? `  CUR ${cur.x.toFixed(0)},${cur.y.toFixed(0)}` : ""
         }`;
       }
       raf = requestAnimationFrame(update);

@@ -95,7 +95,7 @@ interface GameState {
   lastAutosaveSimTime: number;
 }
 
-const DEFAULT_CAMERA: Camera = { x: 0, y: 0, zoom: 0.7 };
+const DEFAULT_CAMERA: Camera = { x: 0, y: 0, zoom: 0.18 };
 
 function makeInitialBuildings(seed: number): BuildingInstance[] {
   // Pre-seed: 1 nuclear reactor, 1 crew habitat, 1 greenhouse, 1 oxygen plant, 1 water plant,

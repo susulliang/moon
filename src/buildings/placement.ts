@@ -14,10 +14,10 @@ export function buildingFootprint(b: BuildingInstance | { typeId: string; x: num
 
 export function rectsOverlap(a: Rect, b: Rect, pad = 6): boolean {
   return !(
-    a.x + a.w + pad < b.x ||
-    b.x + b.w + pad < a.x ||
-    a.y + a.h + pad < b.y ||
-    b.y + b.h + pad < a.y
+    a.x + a.w + pad <= b.x ||
+    b.x + b.w + pad <= a.x ||
+    a.y + a.h + pad <= b.y ||
+    b.y + b.h + pad <= a.y
   );
 }
 

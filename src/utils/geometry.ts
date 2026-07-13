@@ -1,5 +1,5 @@
 // ============================================================================
-// Geometry helpers — world/screen transforms, pan/zoom math
+// Geometry helpers — isometric (RA2-style 2:1) world/screen transforms
 // ============================================================================
 
 export interface Camera {
@@ -8,8 +8,8 @@ export interface Camera {
   zoom: number;    // world-to-screen scale
 }
 
-export const MIN_ZOOM = 0.18;
-export const MAX_ZOOM = 6;
+export const MIN_ZOOM = 0.08;
+export const MAX_ZOOM = 3;
 
 /** Grid cell size in world units. Buildings + corridors snap to this grid. */
 export const GRID_SIZE = 40;
@@ -18,7 +18,11 @@ export function clampZoom(z: number): number {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 }
 
-// World → screen coordinates given a viewport size + camera
+// === Isometric projection (2:1 diamond ratio) ===
+// worldX, worldY → screenX, screenY
+//   sx = (wx - wy) * zoom
+//   sy = (wx + wy) * zoom * 0.5
+
 export function worldToScreen(
   wx: number,
   wy: number,
@@ -26,9 +30,11 @@ export function worldToScreen(
   vw: number,
   vh: number,
 ): { x: number; y: number } {
+  const dx = wx - cam.x;
+  const dy = wy - cam.y;
   return {
-    x: (wx - cam.x) * cam.zoom + vw / 2,
-    y: (wy - cam.y) * cam.zoom + vh / 2,
+    x: (dx - dy) * cam.zoom + vw / 2,
+    y: (dx + dy) * cam.zoom * 0.5 + vh / 2,
   };
 }
 
@@ -39,9 +45,11 @@ export function screenToWorld(
   vw: number,
   vh: number,
 ): { x: number; y: number } {
+  const dx = sx - vw / 2;
+  const dy = sy - vh / 2;
   return {
-    x: (sx - vw / 2) / cam.zoom + cam.x,
-    y: (sy - vh / 2) / cam.zoom + cam.y,
+    x: (dx + 2 * dy) / (2 * cam.zoom) + cam.x,
+    y: (2 * dy - dx) / (2 * cam.zoom) + cam.y,
   };
 }
 

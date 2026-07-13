@@ -58,7 +58,7 @@ export function useKeyboard() {
           break;
         case "h":
         case "H":
-          store.setCamera({ x: 0, y: 0, zoom: 0.7 });
+          store.setCamera({ x: 0, y: 0, zoom: 0.18 });
           break;
         case "s":
         case "S":
